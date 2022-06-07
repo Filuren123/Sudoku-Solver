@@ -10,6 +10,8 @@ namespace SudokuSolver
         {
             Sudoku theSudoku = new Sudoku();
             Console.WriteLine(theSudoku.ToString());
+            theSudoku.SolveSudoku();
+            Console.WriteLine(theSudoku.ToString());
         }
     }
 
@@ -51,9 +53,84 @@ namespace SudokuSolver
                             var testValue = rows[rowGroup][row][columnGroup][column].ToString();
                             if (testValue != "x") continue;
 
+                            // Check if number 1 thru 9 could be in the gridspot
+                            for (int i = 1; i <= 9; i++)
+                            {
+                                if (CheckRowFor(char.Parse(i.ToString()), rowGroup, row)) continue;
+                                if (CheckColumnFor(char.Parse(i.ToString()), columnGroup, column)) continue;
+                                if (CheckVicinitySquareFor(char.Parse(i.ToString()), rowGroup, columnGroup)) continue;
+
+                                if (CheckSiblings(char.Parse(i.ToString()), rowGroup, row, columnGroup, column))
+                                {
+                                    rows[rowGroup][row][columnGroup][column] = char.Parse(i.ToString());
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Checks the neighbouring rows and columns. It checks if searchChar could be found.
+        /// </summary>
+        /// <param name="searchChar">The character you want to match</param>
+        /// <param name="rowGroup">In what row group the row is located</param>
+        /// <param name="row">In what row, inside the row group, the searchChar is located</param>
+        /// <param name="columnGroup">In what column group the column is located</param>
+        /// <param name="column">In what column, inside the column group, the searchChar is located</param>
+        /// <returns>Returns true if ALL siblings contains searchChar</returns>
+        private bool CheckSiblings(char searchChar, int rowGroup, int row, int columnGroup, int column)
+        {
+            bool isPossible = true;
+
+            if (!(rowGroup == 0 && row == 0)) CheckTop();
+            if (!(rowGroup == 2 && row == 2)) CheckBottom();
+            if (!(columnGroup == 0 && column == 0)) CheckLeft();
+            if (!(columnGroup == 2 && column == 2)) CheckRight();
+
+            if (isPossible) return true;
+            return false;
+
+            void CheckTop()
+            {
+                if (row == 0)
+                {
+                    if (!CheckRowFor(searchChar, --rowGroup, 2)) isPossible = false;
+                    return;
+                }
+                if (!CheckRowFor(searchChar, rowGroup, --row)) isPossible = false;
+            }
+
+            void CheckBottom()
+            {
+                if (row == 2)
+                {
+                    if (!CheckRowFor(searchChar, ++rowGroup, 0)) isPossible = false;
+                    return;
+                }
+                if (!CheckRowFor(searchChar, rowGroup, ++row)) isPossible = false;
+            }
+
+            void CheckRight()
+            {
+                if (column == 2)
+                {
+                    if (!CheckColumnFor(searchChar, ++columnGroup, 0)) isPossible = false;
+                    return;
+                }
+                if (!CheckColumnFor(searchChar, columnGroup, ++column)) isPossible = false;
+            }
+
+            void CheckLeft()
+            {
+                if (column == 0)
+                {
+                    if (!CheckColumnFor(searchChar, --columnGroup, 2)) isPossible = false;
+                    return;
+                }
+                if (!CheckColumnFor(searchChar, columnGroup, --column)) isPossible = false;
             }
         }
 
@@ -112,14 +189,11 @@ namespace SudokuSolver
         {
             foreach (var row in rows[rowGroup])
             {
-                foreach (var columnBundle in row)
+                foreach (var column in row[columnGroup])
                 {
-                    foreach (var column in columnBundle)
+                    if (column == searchChar)
                     {
-                        if (column == searchChar)
-                        {
-                            return true;
-                        }
+                        return true;
                     }
                 }
             }
