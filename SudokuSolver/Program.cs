@@ -17,7 +17,9 @@ namespace SudokuSolver
 
     class Sudoku
     {
-        private char[][][][] rows = new char[][][][]
+        Random random = new Random();
+        private bool solveDidChange = true;
+        private char[][][][] Dis_rows = new char[][][][]
         {
             new char[][][]
             {
@@ -35,11 +37,64 @@ namespace SudokuSolver
             {
                 new char[][] { new char[] { 'x', 'x', 'x' }, new char[] { 'x', '8', 'x' }, new char[] { 'x', 'x', 'x' } },
                 new char[][] { new char[] { 'x', '9', '1' }, new char[] { 'x', 'x', '2' }, new char[] { 'x', '5', '7' } },
-                new char[][] { new char[] { '3', 'x', '2' }, new char[] { 'x', 'x', '6' }, new char[] { 'x', 'x', '1' } } // Second x in third group should be an 8
+                new char[][] { new char[] { '3', 'x', '2' }, new char[] { 'x', 'x', '6' }, new char[] { 'x', 'x', '1' } }
             }
         };
 
+        private char[][][][] rows = new char[][][][]
+        {
+            new char[][][]
+            {
+                new char[][] { new char[] { 'x', 'x', 'x' }, new char[] { '6', 'x', 'x' }, new char[] { 'x', 'x', 'x' } },
+                new char[][] { new char[] { 'x', '2', 'x' }, new char[] { 'x', 'x', 'x' }, new char[] { '1', '5', '6' } },
+                new char[][] { new char[] { 'x', 'x', 'x' }, new char[] { '3', '4', 'x' }, new char[] { 'x', 'x', 'x' } }
+            },
+            new char[][][]
+            {
+                new char[][] { new char[] { 'x', 'x', '4' }, new char[] { '1', '5', 'x' }, new char[] { 'x', 'x', 'x' } },
+                new char[][] { new char[] { '3', 'x', '6' }, new char[] { 'x', 'x', '9' }, new char[] { 'x', '2', 'x' } },
+                new char[][] { new char[] { '7', 'x', '9' }, new char[] { 'x', 'x', 'x' }, new char[] { '7', 'x', '1' } }
+            },
+            new char[][][]
+            {
+                new char[][] { new char[] { 'x', 'x', '5' }, new char[] { 'x', '7', '6' }, new char[] { '2', '1', 'x' } },
+                new char[][] { new char[] { 'x', 'x', 'x' }, new char[] { '4', '1', 'x' }, new char[] { 'x', 'x', 'x' } },
+                new char[][] { new char[] { 'x', 'x', 'x' }, new char[] { 'x', 'x', '2' }, new char[] { 'x', 'x', '9' } }
+            }
+        };
+
+
+        /// <summary>
+        /// The main method that internaly solves the sudoku. This method also displays the "primary solve", which is as far the program can be sure it's 100% correct.
+        /// </summary>
         public void SolveSudoku()
+        {
+            while (solveDidChange)
+            {
+                solveDidChange = false;
+                PrimarySolveSquares();
+            }
+            Console.WriteLine("\n---------------------------------\n");
+            Console.WriteLine("\nPrimary Solve\n");
+            Console.WriteLine(ToString());
+            Console.WriteLine("\nBeginning bruteforce sequence...\n---------------------------------\n");
+
+            solveDidChange = true;
+            for (int i = 0; i < 1000; i++)
+            {
+                while (solveDidChange)
+                {
+                    solveDidChange = false;
+                    PrimarySolveSquares();
+                }
+                SecondarySolveSquares();
+            }
+        }
+
+        /// <summary>
+        /// Tries to fit in numbers in the sudoku. The number has to be right for it to be assigned.
+        /// </summary>
+        private void PrimarySolveSquares()
         {
             // Go through every unown number character in the sudoku
             for (int rowGroup = 0; rowGroup < rows.Length; rowGroup++)
@@ -63,13 +118,43 @@ namespace SudokuSolver
                                 if (CheckIfOnlyAllowed(char.Parse(i.ToString()), rowGroup, row, columnGroup, column))
                                 {
                                     rows[rowGroup][row][columnGroup][column] = char.Parse(i.ToString());
+                                    solveDidChange = true;
                                     break;
                                 }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
-                                if (CheckSiblings(char.Parse(i.ToString()), rowGroup, row, columnGroup, column))
-                                {
-                                    
-                                }
+        /// <summary>
+        /// Tries to fit in numbers in the sudoku. The number does not need to be the only fit for it to be assinged. A Random variable assigns a random value that is tried for a few criterias.
+        /// </summary>
+        private void SecondarySolveSquares()
+        {
+            // Go through every unown number character in the sudoku
+            for (int rowGroup = 0; rowGroup < rows.Length; rowGroup++)
+            {
+                for (int row = 0; row < rows[rowGroup].Length; row++)
+                {
+                    for (int columnGroup = 0; columnGroup < rows[rowGroup][row].Length; columnGroup++)
+                    {
+                        for (int column = 0; column < rows[rowGroup][row][columnGroup].Length; column++)
+                        {
+                            var testValue = rows[rowGroup][row][columnGroup][column].ToString();
+                            if (testValue != "x") continue;
+
+                            for (int i = 1; i <= 9; i++)
+                            {
+                                var j = random.Next(1, 10);
+                                if (CheckRowFor(char.Parse(j.ToString()), rowGroup, row)) continue;
+                                if (CheckColumnFor(char.Parse(j.ToString()), columnGroup, column)) continue;
+                                if (CheckVicinitySquareFor(char.Parse(j.ToString()), rowGroup, columnGroup)) continue;
+
+                                rows[rowGroup][row][columnGroup][column] = char.Parse(j.ToString());
+                                solveDidChange = true;
+                                break;
                             }
                         }
                     }
@@ -92,13 +177,10 @@ namespace SudokuSolver
             {
                 for (int currCol = 0; currCol < rows[rowGroup][currRow][columnGroup].Length; currCol++)
                 {
-                    if (rows[rowGroup][currRow][columnGroup][currCol] != 'x') continue;
-                    if (!CheckRowFor(searchChar, rowGroup, currRow))
+                    if (rows[rowGroup][currRow][columnGroup][currCol] != 'x' || (currCol == column && currRow == row)) continue;
+                    if (!CheckRowFor(searchChar, rowGroup, currRow) && !CheckColumnFor(searchChar, columnGroup, currCol))
                     {
-                        if (!CheckColumnFor(searchChar, columnGroup, currCol))
-                        {
-                            return false;
-                        }
+                        return false;
                     }
                 }
             }
