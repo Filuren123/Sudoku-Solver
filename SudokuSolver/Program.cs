@@ -60,16 +60,49 @@ namespace SudokuSolver
                                 if (CheckColumnFor(char.Parse(i.ToString()), columnGroup, column)) continue;
                                 if (CheckVicinitySquareFor(char.Parse(i.ToString()), rowGroup, columnGroup)) continue;
 
-                                if (CheckSiblings(char.Parse(i.ToString()), rowGroup, row, columnGroup, column))
+                                if (CheckIfOnlyAllowed(char.Parse(i.ToString()), rowGroup, row, columnGroup, column))
                                 {
                                     rows[rowGroup][row][columnGroup][column] = char.Parse(i.ToString());
                                     break;
+                                }
+
+                                if (CheckSiblings(char.Parse(i.ToString()), rowGroup, row, columnGroup, column))
+                                {
+                                    
                                 }
                             }
                         }
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Checks if it's the only square in group that is allowed to be searchChar.
+        /// </summary>
+        /// <param name="searchChar">The character you want to match</param>
+        /// <param name="rowGroup">In what row group the row is located</param>
+        /// <param name="row">In what row, inside the row group, the searchChar is located</param>
+        /// <param name="columnGroup">In what column group the column is located</param>
+        /// <param name="column">In what column, inside the column group, the searchChar is located</param>
+        /// <returns>Returns true if it's the only one, else it returns false</returns>
+        private bool CheckIfOnlyAllowed(char searchChar, int rowGroup, int row, int columnGroup, int column)
+        {
+            for (int currRow = 0; currRow < rows[rowGroup].Length; currRow++)
+            {
+                for (int currCol = 0; currCol < rows[rowGroup][currRow][columnGroup].Length; currCol++)
+                {
+                    if (rows[rowGroup][currRow][columnGroup][currCol] != 'x') continue;
+                    if (!CheckRowFor(searchChar, rowGroup, currRow))
+                    {
+                        if (!CheckColumnFor(searchChar, columnGroup, currCol))
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+            return true;
         }
 
         /// <summary>
